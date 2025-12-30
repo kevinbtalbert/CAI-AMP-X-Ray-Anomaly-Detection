@@ -1,0 +1,21 @@
+Dataset Statistics
+============================================================
+
+Image Counts:
+  Normal X-rays:          1341
+  Pneumonia X-rays:       3875
+    - Bacterial:          2530
+    - Viral:              1345
+  Total:                  5216
+
+Class Distribution:
+  Normal:                25.7%
+  Pneumonia:             74.3%
+
+Image Sizes:
+  Normal (avg):          597.3 KB
+  Pneumonia (avg):        84.2 KB
+
+Sample Directory:
+  Location:             data/sample_xrays
+  Sample count:         20

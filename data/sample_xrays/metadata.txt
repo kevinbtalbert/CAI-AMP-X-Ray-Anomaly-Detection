@@ -1,0 +1,113 @@
+Real Chest X-Ray Dataset - Sample Images
+============================================================
+
+Source: Kaggle Chest X-Ray Images (Pneumonia) Dataset
+https://www.kaggle.com/datasets/paultimothymooney/chest-xray-pneumonia
+
+Classes:
+  - NORMAL: Healthy chest X-rays
+  - PNEUMONIA: X-rays showing pneumonia (bacterial or viral)
+
+Sample Images:
+------------------------------------------------------------
+
+File: normal_01.jpeg
+Original: NORMAL2-IM-0927-0001.jpeg
+Description: Normal
+Size: 2032.2 KB
+
+File: normal_02.jpeg
+Original: NORMAL2-IM-1056-0001.jpeg
+Description: Normal
+Size: 357.5 KB
+
+File: normal_03.jpeg
+Original: IM-0427-0001.jpeg
+Description: Normal
+Size: 582.0 KB
+
+File: normal_04.jpeg
+Original: NORMAL2-IM-1260-0001.jpeg
+Description: Normal
+Size: 632.1 KB
+
+File: normal_05.jpeg
+Original: IM-0656-0001-0001.jpeg
+Description: Normal
+Size: 1107.3 KB
+
+File: normal_06.jpeg
+Original: IM-0561-0001.jpeg
+Description: Normal
+Size: 1016.6 KB
+
+File: normal_07.jpeg
+Original: NORMAL2-IM-1110-0001.jpeg
+Description: Normal
+Size: 657.8 KB
+
+File: normal_08.jpeg
+Original: IM-0757-0001.jpeg
+Description: Normal
+Size: 392.1 KB
+
+File: normal_09.jpeg
+Original: NORMAL2-IM-1326-0001.jpeg
+Description: Normal
+Size: 263.2 KB
+
+File: normal_10.jpeg
+Original: NORMAL2-IM-0736-0001.jpeg
+Description: Normal
+Size: 204.1 KB
+
+File: pneumonia_bacteria_01.jpeg
+Original: person63_bacteria_306.jpeg
+Description: Pneumonia (Bacterial)
+Size: 56.4 KB
+
+File: pneumonia_bacteria_02.jpeg
+Original: person1438_bacteria_3721.jpeg
+Description: Pneumonia (Bacterial)
+Size: 58.9 KB
+
+File: pneumonia_bacteria_03.jpeg
+Original: person755_bacteria_2659.jpeg
+Description: Pneumonia (Bacterial)
+Size: 51.5 KB
+
+File: pneumonia_bacteria_04.jpeg
+Original: person661_bacteria_2553.jpeg
+Description: Pneumonia (Bacterial)
+Size: 26.2 KB
+
+File: pneumonia_bacteria_05.jpeg
+Original: person276_bacteria_1296.jpeg
+Description: Pneumonia (Bacterial)
+Size: 43.7 KB
+
+File: pneumonia_virus_01.jpeg
+Original: person478_virus_975.jpeg
+Description: Pneumonia (Viral)
+Size: 93.0 KB
+
+File: pneumonia_virus_02.jpeg
+Original: person1353_virus_2333.jpeg
+Description: Pneumonia (Viral)
+Size: 149.1 KB
+
+File: pneumonia_virus_03.jpeg
+Original: person124_virus_238.jpeg
+Description: Pneumonia (Viral)
+Size: 115.0 KB
+
+File: pneumonia_virus_04.jpeg
+Original: person535_virus_1062.jpeg
+Description: Pneumonia (Viral)
+Size: 86.3 KB
+
+File: pneumonia_virus_05.jpeg
+Original: person1233_virus_2090.jpeg
+Description: Pneumonia (Viral)
+Size: 85.8 KB
+
