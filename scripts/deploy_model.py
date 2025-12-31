@@ -1,19 +1,17 @@
 """
 Deploy X-ray anomaly detection model to Cloudera ML using the Models API.
-Reference: https://docs.cloudera.com/machine-learning/1.5.4/rest-api-reference/index.html
+Reference: https://docs.cloudera.com/machine-learning/1.5.4/models/topics/ml-creating-and-deploying-a-model.html
 """
 import os
 import sys
 import json
 import requests
+import time
 from pathlib import Path
 from dotenv import load_dotenv
-import mlflow
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from models.xray_model import save_model
 
 
 class ClouderaMLClient:
@@ -76,20 +74,20 @@ class ClouderaMLClient:
     def create_model_build(
         self,
         model_id: str,
-        file_path: str,
+        file_path: str = "predict.py",
         function_name: str = "predict",
-        kernel: str = "python3",
-        runtime_identifier: str = "docker.repository.cloudera.com/cloudera/cdsw/ml-runtime-workbench-python3.9-standard:2023.05.2-b7"
+        kernel: str = "python3"
     ) -> dict:
         """
-        Create a model build (register model version).
+        Create a model build.
+        
+        Based on: https://docs.cloudera.com/machine-learning/1.5.4/models/topics/ml-creating-and-deploying-a-model.html
         
         Args:
             model_id: Model ID
-            file_path: Path to model file/directory
-            function_name: Prediction function name
-            kernel: Kernel type
-            runtime_identifier: Runtime image identifier
+            file_path: Path to prediction file (default: predict.py)
+            function_name: Prediction function name (default: predict)
+            kernel: Kernel type (default: python3)
             
         Returns:
             Build creation response
@@ -101,11 +99,12 @@ class ClouderaMLClient:
             "model_id": model_id,
             "file_path": file_path,
             "function_name": function_name,
-            "kernel": kernel,
-            "runtime_identifier": runtime_identifier
+            "kernel": kernel
         }
         
         print(f"Creating model build...")
+        print(f"  File: {file_path}")
+        print(f"  Function: {function_name}")
         response = requests.post(url, headers=self.headers, json=payload)
         
         if response.status_code == 201:
@@ -115,6 +114,38 @@ class ClouderaMLClient:
             print(f"✗ Failed to create model build: {response.status_code}")
             print(f"Response: {response.text}")
             response.raise_for_status()
+    
+    def wait_for_build(self, model_id: str, build_id: str, timeout: int = 600) -> dict:
+        """
+        Wait for model build to complete.
+        
+        Args:
+            model_id: Model ID
+            build_id: Build ID
+            timeout: Maximum time to wait in seconds
+            
+        Returns:
+            Final build status
+        """
+        url = f"{self.api_url}/api/v2/projects/{self.project_id}/models/{model_id}/builds/{build_id}"
+        
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            response = requests.get(url, headers=self.headers)
+            if response.status_code == 200:
+                build = response.json()
+                status = build.get("status", "unknown")
+                
+                if status in ["built", "build failed"]:
+                    return build
+                
+                print(f"  Build status: {status}... waiting")
+                time.sleep(10)
+            else:
+                print(f"Error checking build status: {response.status_code}")
+                break
+        
+        raise TimeoutError(f"Build did not complete within {timeout} seconds")
     
     def create_model_deployment(
         self,
@@ -190,7 +221,9 @@ class ClouderaMLClient:
 def deploy_xray_model():
     """
     Main deployment function.
-    Saves MLflow model and deploys to Cloudera ML.
+    Deploys predict.py as a CML Model.
+    
+    Based on: https://docs.cloudera.com/machine-learning/1.5.4/models/topics/ml-creating-and-deploying-a-model.html
     """
     # Load environment variables
     load_dotenv()
@@ -211,17 +244,20 @@ def deploy_xray_model():
         print("Copy .env.example to .env and fill in your values")
         return False
     
+    # Verify predict.py exists
+    if not Path("predict.py").exists():
+        print("Error: predict.py not found")
+        print("This file is required for CML Model deployment")
+        return False
+    
     print("=" * 60)
     print("X-Ray Anomaly Detection Model Deployment")
     print("=" * 60)
+    print("\nDeploying predict.py as a Cloudera ML Model")
+    print("Reference: https://docs.cloudera.com/machine-learning/1.5.4/models/topics/ml-creating-and-deploying-a-model.html")
     
-    # Step 1: Save MLflow model
-    print("\n[1/4] Saving MLflow model...")
-    model_path = "xray_model"
-    save_model(model_path)
-    
-    # Step 2: Initialize Cloudera ML client
-    print("\n[2/4] Connecting to Cloudera ML...")
+    # Step 1: Initialize Cloudera ML client
+    print("\n[1/4] Connecting to Cloudera ML...")
     client = ClouderaMLClient(api_url, api_key, project_id)
     
     # Check if model already exists
@@ -237,9 +273,9 @@ def deploy_xray_model():
                     print(f"Found existing model: {model_name} (ID: {model['id']})")
                     break
         
-        # Step 3: Create model if it doesn't exist
+        # Step 2: Create model if it doesn't exist
         if not existing_model:
-            print("\n[3/4] Creating new model...")
+            print("\n[2/4] Creating new model...")
             model_response = client.create_model(
                 name=model_name,
                 description=model_description,
@@ -247,23 +283,40 @@ def deploy_xray_model():
             )
             model_id = model_response.get("id")
         else:
-            print("\n[3/4] Using existing model...")
+            print("\n[2/4] Using existing model...")
             model_id = existing_model.get("id")
         
         print(f"Model ID: {model_id}")
         
-        # Step 4: Create model build
-        print("\n[4/4] Creating model build...")
+        # Step 3: Create model build
+        print("\n[3/4] Creating model build...")
+        print("This will:")
+        print("  - Build a Docker container with predict.py")
+        print("  - Install dependencies from requirements.txt")
+        print("  - Download pretrained model from Hugging Face")
+        
         build_response = client.create_model_build(
             model_id=model_id,
-            file_path=model_path,
-            function_name="predict"
+            file_path="predict.py",
+            function_name="predict",
+            kernel="python3"
         )
         build_id = build_response.get("id")
         print(f"Build ID: {build_id}")
         
-        # Step 5: Deploy model
-        print("\nDeploying model...")
+        # Wait for build to complete
+        print("\nWaiting for build to complete (this may take 5-10 minutes)...")
+        build = client.wait_for_build(model_id, build_id)
+        
+        if build.get("status") == "build failed":
+            print("\n✗ Model build failed!")
+            print("Check the CML UI for build logs")
+            return False
+        
+        print("✓ Model built successfully!")
+        
+        # Step 4: Deploy model
+        print("\n[4/4] Deploying model...")
         deployment_response = client.create_model_deployment(
             model_id=model_id,
             build_id=build_id,
@@ -281,10 +334,16 @@ def deploy_xray_model():
         print(f"Build ID: {build_id}")
         
         if "access_key" in deployment_response:
-            print(f"Access Key: {deployment_response['access_key']}")
+            print(f"\nModel Access Key: {deployment_response['access_key']}")
+            print("\n⚠️  Save this access key! You'll need it to call the model.")
         
-        print("\nYou can now use the model endpoint for inference.")
-        print("See scripts/test_inference.py for example usage.")
+        print("\nYour CML Model is now deployed!")
+        print("\nTo use it:")
+        print("1. Update app.py to call this CML Model endpoint")
+        print("2. Or test it directly: python scripts/test_inference.py")
+        print("\nModel endpoint format:")
+        print(f"  POST {api_url}/api/altus-ds-1/models/call-model")
+        print(f"  Body: {{\"accessKey\": \"<key>\", \"request\": {{\"image_base64\": \"...\"}}}}")
         
         return True
         
