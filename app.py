@@ -53,7 +53,20 @@ app.add_middleware(
 )
 
 # Configuration for CML Model endpoint
-CML_MODEL_ENDPOINT = os.getenv("CML_MODEL_ENDPOINT")  # e.g., https://ml.example.com/api/altus-ds-1/models/call-model
+def get_cml_model_endpoint():
+    """Auto-detect CML Model endpoint from environment."""
+    endpoint = os.getenv("CML_MODEL_ENDPOINT")
+    
+    # If not set, try to construct from CDSW_DOMAIN
+    if not endpoint:
+        cdsw_domain = os.getenv("CDSW_DOMAIN")
+        if cdsw_domain:
+            endpoint = f"https://{cdsw_domain}/api/altus-ds-1/models/call-model"
+            logger.info(f"Auto-detected CML Model endpoint: {endpoint}")
+    
+    return endpoint
+
+CML_MODEL_ENDPOINT = get_cml_model_endpoint()
 CML_MODEL_ACCESS_KEY = os.getenv("CML_MODEL_ACCESS_KEY")
 USE_LOCAL_MODEL = os.getenv("USE_LOCAL_MODEL", "true").lower() == "true"
 

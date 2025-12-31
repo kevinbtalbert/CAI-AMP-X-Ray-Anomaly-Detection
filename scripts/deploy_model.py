@@ -218,6 +218,47 @@ class ClouderaMLClient:
             response.raise_for_status()
 
 
+def get_cml_environment():
+    """
+    Automatically detect CML environment variables.
+    
+    Checks for:
+    1. Explicit env vars (CML_API_URL, CML_API_KEY, PROJECT_ID)
+    2. CML session env vars (CDSW_API_URL, CDSW_APIV2_KEY, CDSW_PROJECT_ID)
+    3. .env file
+    
+    Returns:
+        tuple: (api_url, api_key, project_id) or (None, None, None)
+    """
+    # Try explicit env vars first
+    api_url = os.getenv("CML_API_URL")
+    api_key = os.getenv("CML_API_KEY")
+    project_id = os.getenv("PROJECT_ID")
+    
+    # If not found, try CML session env vars
+    if not api_url:
+        cdsw_api_url = os.getenv("CDSW_API_URL")
+        if cdsw_api_url:
+            # Convert v1 URL to base URL
+            # CDSW_API_URL is like: https://ml-xxx.cloudera.site/api/v1
+            api_url = cdsw_api_url.replace("/api/v1", "")
+            print(f"✓ Detected CML API URL from CDSW_API_URL: {api_url}")
+    
+    if not api_key:
+        cdsw_apiv2_key = os.getenv("CDSW_APIV2_KEY")
+        if cdsw_apiv2_key:
+            api_key = cdsw_apiv2_key
+            print(f"✓ Detected API key from CDSW_APIV2_KEY")
+    
+    if not project_id:
+        cdsw_project_id = os.getenv("CDSW_PROJECT_ID")
+        if cdsw_project_id:
+            project_id = cdsw_project_id
+            print(f"✓ Detected project ID from CDSW_PROJECT_ID: {project_id}")
+    
+    return api_url, api_key, project_id
+
+
 def deploy_xray_model():
     """
     Main deployment function.
@@ -225,12 +266,12 @@ def deploy_xray_model():
     
     Based on: https://docs.cloudera.com/machine-learning/1.5.4/models/topics/ml-creating-and-deploying-a-model.html
     """
-    # Load environment variables
+    # Load environment variables from .env if present
     load_dotenv()
     
-    api_url = os.getenv("CML_API_URL")
-    api_key = os.getenv("CML_API_KEY")
-    project_id = os.getenv("PROJECT_ID")
+    # Get CML environment (auto-detect or from env vars)
+    api_url, api_key, project_id = get_cml_environment()
+    
     model_name = os.getenv("MODEL_NAME", "xray-anomaly-detector")
     model_description = os.getenv(
         "MODEL_DESCRIPTION",
@@ -240,8 +281,11 @@ def deploy_xray_model():
     # Validate environment
     if not all([api_url, api_key, project_id]):
         print("Error: Missing required environment variables")
-        print("Please set: CML_API_URL, CML_API_KEY, PROJECT_ID")
-        print("Copy .env.example to .env and fill in your values")
+        print("\nCould not auto-detect CML environment.")
+        print("Please set one of:")
+        print("  Option 1: CML_API_URL, CML_API_KEY, PROJECT_ID")
+        print("  Option 2: Run from CML session (auto-detects CDSW_* vars)")
+        print("  Option 3: Create .env file with values")
         return False
     
     # Verify predict.py exists
